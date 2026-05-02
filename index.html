@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Winn OS Web - Windows 11 Simulation</title>
+  <style>
+    :root {
+      --bg: linear-gradient(135deg, #0a1e50 0%, #203a8f 45%, #3f62c5 100%);
+      --glass: rgba(255, 255, 255, 0.15);
+      --glass-strong: rgba(255, 255, 255, 0.22);
+      --text: #f4f7ff;
+      --text-dark: #111827;
+      --border: rgba(255, 255, 255, 0.24);
+      --window-bg: rgba(244, 248, 255, 0.92);
+      --accent: #3b82f6;
+      --shadow: 0 20px 40px rgba(0, 0, 0, 0.30);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; font-family: "Segoe UI", system-ui, sans-serif; overflow: hidden; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      user-select: none;
+    }
+
+    #desktop {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .desktop-icons {
+      position: absolute;
+      inset: 20px auto auto 20px;
+      display: grid;
+      grid-template-columns: repeat(1, 86px);
+      gap: 14px;
+      z-index: 3;
+    }
+
+    .desktop-icon {
+      width: 86px;
+      display: grid;
+      justify-items: center;
+      gap: 8px;
+      padding: 8px 4px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .desktop-icon:hover { background: rgba(255,255,255,0.13); }
+    .desktop-icon .glyph { font-size: 30px; }
+    .desktop-icon .label { text-align: center; font-size: 12px; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+
+    .taskbar {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 12px;
+      width: min(92vw, 980px);
+      height: 58px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      backdrop-filter: blur(18px);
+      background: var(--glass);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      z-index: 1000;
+      box-shadow: 0 12px 30px rgba(0,0,0,.24);
+    }
+
+    .taskbar-center, .taskbar-right { display: flex; align-items: center; gap: 8px; }
+
+    .tb-btn {
+      width: 42px;
+      height: 42px;
+      border: 1px solid transparent;
+      border-radius: 12px;
+      background: rgba(255,255,255,.12);
+      color: #fff;
+      font-size: 20px;
+      cursor: pointer;
+      transition: .2s;
+    }
+    .tb-btn:hover { background: rgba(255,255,255,.22); border-color: rgba(255,255,255,.35); }
+    .tb-btn.active { outline: 2px solid #7db3ff; }
+
+    .clock {
+      min-width: 124px;
+      text-align: right;
+      padding: 6px 10px;
+      border-radius: 10px;
+      font-size: 12px;
+      line-height: 1.2;
+      background: rgba(255,255,255,.12);
+    }
+
+    .panel {
+      position: absolute;
+      bottom: 78px;
+      background: rgba(17, 25, 40, 0.72);
+      border: 1px solid rgba(255,255,255,.18);
+      backdrop-filter: blur(20px);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      z-index: 999;
+      display: none;
+      color: #f8fbff;
+    }
+
+    .panel.show { display: block; }
+
+    .start-menu {
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(92vw, 620px);
+      height: min(72vh, 520px);
+      padding: 16px;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 14px;
+    }
+
+    .search {
+      width: 100%;
+      border: 1px solid rgba(255,255,255,.28);
+      background: rgba(255,255,255,.12);
+      color: #fff;
+      border-radius: 10px;
+      padding: 10px 12px;
+      outline: none;
+      font-size: 14px;
+    }
+
+    .app-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+    }
+    .app-btn {
+      border: 1px solid transparent;
+      background: rgba(255,255,255,.10);
+      color: #fff;
+      border-radius: 10px;
+      padding: 8px 4px;
+      display: grid;
+      justify-items: center;
+      gap: 6px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .app-btn:hover { background: rgba(255,255,255,.22); border-color: rgba(255,255,255,.3); }
+
+    #windows-layer { position: absolute; inset: 0; z-index: 20; }
+
+    .window {
+      position: absolute;
+      min-width: 320px;
+      min-height: 220px;
+      width: 620px;
+      height: 420px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(0,0,0,.12);
+      box-shadow: var(--shadow);
+      background: var(--window-bg);
+      color: var(--text-dark);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .window-header {
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 8px 0 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.9), rgba(240,245,255,.6));
+      cursor: grab;
+      border-bottom: 1px solid rgba(0,0,0,.08);
+    }
+    .window-title { font-size: 13px; font-weight: 600; }
+    .controls { display: flex; gap: 6px; }
+    .ctrl {
+      width: 30px; height: 26px; border: none; border-radius: 8px; cursor: pointer;
+      background: rgba(15,23,42,.08); color: #0f172a;
+    }
+    .ctrl.close:hover { background: #ef4444; color: #fff; }
+    .ctrl:hover { background: rgba(15,23,42,.16); }
+
+    .window-body { flex: 1; overflow: auto; padding: 14px; background: rgba(255,255,255,.78); }
+
+    .note-area { width: 100%; height: calc(100% - 8px); resize: none; border: none; outline: none; background: transparent; font-size: 15px; }
+    .calc-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+    .calc-screen { grid-column:1/-1; background:#0f172a; color:#fff; border-radius:8px; padding:12px; text-align:right; font-size:24px; min-height:56px; }
+    .calc-key { padding:12px; border:none; border-radius:8px; background:#e7edf9; cursor:pointer; font-size:16px; }
+    .calc-key.op { background:#bfdbfe; }
+    .calc-key.eq { background:#3b82f6; color:#fff; }
+
+    .explorer { display:grid; grid-template-columns: 180px 1fr; height:100%; gap:12px; }
+    .pane { background:#eef4ff; border-radius:10px; padding:10px; }
+    .file { padding:8px; border-radius:6px; cursor:pointer; }
+    .file:hover { background:#dbeafe; }
+
+    .setting-row { display:flex; justify-content:space-between; align-items:center; padding:10px; background:#eef4ff; border-radius:8px; margin-bottom:10px; }
+    .toggle { border:none; border-radius:999px; padding:7px 12px; cursor:pointer; }
+
+    @media (max-width: 760px){
+      .app-grid { grid-template-columns: repeat(4, 1fr); }
+      .window { width: 92vw !important; left: 4vw !important; }
+    }
+  </style>
+</head>
+<body>
+  <div id="desktop">
+    <div class="desktop-icons" id="desktopIcons"></div>
+    <div id="windows-layer"></div>
+
+    <div id="startMenu" class="panel start-menu">
+      <input class="search" placeholder="Type here to search" />
+      <strong>Pinned</strong>
+      <div class="app-grid" id="startGrid"></div>
+      <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,.08); border-radius:10px; padding:8px 10px;">
+        <span>Winn User</span>
+        <button class="tb-btn" id="powerBtn" title="Power">⏻</button>
+      </div>
+    </div>
+
+    <div class="taskbar">
+      <div class="taskbar-center" id="taskbarApps"></div>
+      <div class="taskbar-right">
+        <button class="tb-btn" id="toggleTheme" title="Toggle Theme">🌓</button>
+        <div class="clock" id="clock"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const APPS = [
+      { id: 'start', name: 'Start', icon: '🪟', system: true },
+      { id: 'edge', name: 'Edge', icon: '🌐' },
+      { id: 'explorer', name: 'File Explorer', icon: '📁' },
+      { id: 'notepad', name: 'Notepad', icon: '📝' },
+      { id: 'calculator', name: 'Calculator', icon: '🧮' },
+      { id: 'settings', name: 'Settings', icon: '⚙️' }
+    ];
+
+    const windowsLayer = document.getElementById('windows-layer');
+    const taskbarApps = document.getElementById('taskbarApps');
+    const startGrid = document.getElementById('startGrid');
+    const desktopIcons = document.getElementById('desktopIcons');
+    const startMenu = document.getElementById('startMenu');
+    const clock = document.getElementById('clock');
+    let z = 50;
+
+    function updateClock(){
+      const now = new Date();
+      clock.innerHTML = `${now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}<br>${now.toLocaleDateString()}`;
+    }
+    setInterval(updateClock, 1000); updateClock();
+
+    function appButton(app){
+      const b = document.createElement('button');
+      b.className = 'tb-btn';
+      b.title = app.name;
+      b.textContent = app.icon;
+      b.onclick = () => app.id === 'start' ? toggleStart() : launchApp(app.id);
+      return b;
+    }
+
+    APPS.forEach(app => taskbarApps.appendChild(appButton(app)));
+
+    APPS.filter(a => !a.system).forEach(app => {
+      const d = document.createElement('div');
+      d.className = 'desktop-icon';
+      d.innerHTML = `<div class="glyph">${app.icon}</div><div class="label">${app.name}</div>`;
+      d.ondblclick = () => launchApp(app.id);
+      desktopIcons.appendChild(d);
+
+      const s = document.createElement('button');
+      s.className = 'app-btn';
+      s.innerHTML = `<div style="font-size:24px;">${app.icon}</div><div>${app.name}</div>`;
+      s.onclick = () => { launchApp(app.id); startMenu.classList.remove('show'); };
+      startGrid.appendChild(s);
+    });
+
+    function toggleStart(){ startMenu.classList.toggle('show'); }
+    document.addEventListener('click', e => {
+      if (!startMenu.contains(e.target) && !e.target.closest('.taskbar-center .tb-btn:first-child')) {
+        if (!e.target.closest('.tb-btn') || e.target.title !== 'Start') startMenu.classList.remove('show');
+      }
+    });
+
+    function launchApp(id){
+      const existing = document.querySelector(`.window[data-app="${id}"]`);
+      if (existing){ focusWindow(existing); return; }
+
+      const win = document.createElement('div');
+      win.className = 'window';
+      win.dataset.app = id;
+      win.style.left = `${80 + Math.random()*200}px`;
+      win.style.top = `${60 + Math.random()*120}px`;
+      win.style.zIndex = ++z;
+
+      const app = APPS.find(a => a.id === id);
+      win.innerHTML = `
+        <div class="window-header">
+          <div class="window-title">${app.icon} ${app.name}</div>
+          <div class="controls">
+            <button class="ctrl min">—</button>
+            <button class="ctrl max">▢</button>
+            <button class="ctrl close">✕</button>
+          </div>
+        </div>
+        <div class="window-body"></div>
+      `;
+
+      const body = win.querySelector('.window-body');
+      body.appendChild(renderAppBody(id));
+
+      win.querySelector('.close').onclick = () => win.remove();
+      win.querySelector('.min').onclick = () => win.style.display = 'none';
+      win.querySelector('.max').onclick = () => {
+        const maximized = win.dataset.max === '1';
+        if (!maximized){
+          win.dataset.prev = JSON.stringify({ left: win.style.left, top: win.style.top, width: win.style.width, height: win.style.height });
+          win.style.left = '1vw'; win.style.top = '1vh'; win.style.width = '98vw'; win.style.height = '88vh'; win.dataset.max = '1';
+        } else {
+          const prev = JSON.parse(win.dataset.prev || '{}');
+          Object.assign(win.style, prev); win.dataset.max = '0';
+        }
+      };
+
+      dragWindow(win);
+      win.addEventListener('mousedown', () => focusWindow(win));
+      windowsLayer.appendChild(win);
+    }
+
+    function focusWindow(win){
+      win.style.display = 'flex';
+      win.style.zIndex = ++z;
+    }
+
+    function dragWindow(win){
+      const head = win.querySelector('.window-header');
+      let dragging = false, ox = 0, oy = 0;
+      head.addEventListener('mousedown', e => {
+        if (e.target.closest('.controls')) return;
+        dragging = true;
+        const r = win.getBoundingClientRect();
+        ox = e.clientX - r.left; oy = e.clientY - r.top;
+        focusWindow(win);
+      });
+      document.addEventListener('mousemove', e => {
+        if (!dragging || win.dataset.max === '1') return;
+        win.style.left = `${Math.max(0, e.clientX - ox)}px`;
+        win.style.top = `${Math.max(0, e.clientY - oy)}px`;
+      });
+      document.addEventListener('mouseup', () => dragging = false);
+    }
+
+    function renderAppBody(id){
+      const wrap = document.createElement('div');
+      wrap.style.height = '100%';
+      if (id === 'notepad') {
+        wrap.innerHTML = `<textarea class="note-area" placeholder="Start typing..."></textarea>`;
+      } else if (id === 'edge') {
+        wrap.innerHTML = `<h3>🌐 Winn Browser</h3><p>This local simulation works directly from <code>file://</code>.</p><input class="search" value="https://example.com" /><p style="margin-top:10px;">Browsing is simulated in this offline demo.</p>`;
+      } else if (id === 'explorer') {
+        wrap.innerHTML = `<div class="explorer"><div class="pane"><div class="file">Desktop</div><div class="file">Documents</div><div class="file">Downloads</div><div class="file">Pictures</div></div><div class="pane"><h4>Quick Access</h4><div class="file">📄 Resume.docx</div><div class="file">📊 Budget.xlsx</div><div class="file">🖼 Wallpaper.png</div></div></div>`;
+      } else if (id === 'settings') {
+        wrap.innerHTML = `<h3>Settings</h3><div class="setting-row"><span>Dark Wallpaper</span><button class="toggle" id="themeSwitch">Toggle</button></div><div class="setting-row"><span>Animations</span><button class="toggle">On</button></div>`;
+        setTimeout(() => wrap.querySelector('#themeSwitch')?.addEventListener('click', toggleTheme), 0);
+      } else if (id === 'calculator') {
+        wrap.innerHTML = `<div class="calc-grid"><div class="calc-screen" id="calcOut">0</div>${['7','8','9','/','4','5','6','*','1','2','3','-','0','.','=','+'].map(k=>`<button class="calc-key ${['/','*','-','+'].includes(k)?'op':''} ${k==='='?'eq':''}">${k}</button>`).join('')}</div>`;
+        setTimeout(initCalc,0);
+      }
+      return wrap;
+    }
+
+    function initCalc(){
+      const screen = document.getElementById('calcOut');
+      if (!screen) return;
+      let expr = '';
+      screen.parentElement.querySelectorAll('.calc-key').forEach(btn => btn.addEventListener('click', () => {
+        const v = btn.textContent;
+        if (v === '=') {
+          try { expr = String(Function(`return (${expr || 0})`)()); } catch { expr = 'Err'; }
+        } else expr += v;
+        screen.textContent = expr;
+      }));
+    }
+
+    function toggleTheme(){
+      const dark = getComputedStyle(document.documentElement).getPropertyValue('--window-bg').includes('244');
+      if (dark) {
+        document.documentElement.style.setProperty('--bg', 'linear-gradient(135deg, #0b1220, #111827, #1f2937)');
+        document.documentElement.style.setProperty('--window-bg', 'rgba(20, 28, 45, 0.94)');
+        document.documentElement.style.setProperty('--text-dark', '#e5e7eb');
+      } else {
+        document.documentElement.style.setProperty('--bg', 'linear-gradient(135deg, #0a1e50 0%, #203a8f 45%, #3f62c5 100%)');
+        document.documentElement.style.setProperty('--window-bg', 'rgba(244, 248, 255, 0.92)');
+        document.documentElement.style.setProperty('--text-dark', '#111827');
+      }
+    }
+
+    document.getElementById('toggleTheme').onclick = toggleTheme;
+    document.getElementById('powerBtn').onclick = () => alert('Shutting down... (simulation)');
+    launchApp('edge');
+  </script>
+</body>
+</html>
