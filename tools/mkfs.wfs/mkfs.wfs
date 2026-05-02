@@ -42,12 +42,13 @@ def main() -> int:
         )
         return 2
 
-    if not args.device.exists() and args.force:
+    target_exists = args.device.exists()
+    if not target_exists and args.force:
         args.device.parent.mkdir(parents=True, exist_ok=True)
-        args.device.touch()
 
-    if args.device.is_file():
-        with args.device.open("r+b") as fp:
+    if args.device.is_file() or (args.force and not target_exists):
+        mode = "r+b" if target_exists else "w+b"
+        with args.device.open(mode) as fp:
             fp.seek(0)
             fp.write(b"WFS0")
         return 0
