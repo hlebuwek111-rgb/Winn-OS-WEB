@@ -1,0 +1,9 @@
+:root[data-theme='light'] {
+  --bg: #f3f5f8;
+  --fg: #1b2430;
+}
+
+:root[data-theme='dark'] {
+  --bg: #0f1115;
+  --fg: #f3f5f8;
+}
