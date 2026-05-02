@@ -42,11 +42,18 @@ def main() -> int:
         )
         return 2
 
-    if args.device.exists() and args.device.is_file():
+    if not args.device.exists() and args.force:
+        args.device.parent.mkdir(parents=True, exist_ok=True)
+        args.device.touch()
+
+    if args.device.is_file():
         with args.device.open("r+b") as fp:
             fp.seek(0)
             fp.write(b"WFS0")
-    return 0
+        return 0
+
+    print("error: target is not a regular file.", file=sys.stderr)
+    return 2
 
 
 if __name__ == "__main__":
