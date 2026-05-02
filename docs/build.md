@@ -18,7 +18,7 @@ sudo apt-get install -y \
 
 Tooling used by this repository:
 
-- `clang`, `clang++`, `lld-link`, `llvm-lib`
+- `clang`, `clang++`, `lld-link`, `llvm-ar`, `llvm-ranlib`
 - `cmake` + `ninja`
 - `sgdisk`, `mkfs.vfat`, `mcopy`, `truncate`
 - `python3`
