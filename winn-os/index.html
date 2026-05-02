@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Winn OS</title>
+    <link rel="stylesheet" href="./css/main.css" />
+    <link rel="stylesheet" href="./css/themes.css" />
+    <link rel="stylesheet" href="./css/components.css" />
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <script type="module">
+      import { Kernel } from './js/kernel.js';
+      import { Bios } from './js/bios.js';
+      import { Login } from './js/login.js';
+      import { Desktop } from './js/desktop.js';
+      import { Taskbar } from './js/taskbar.js';
+      import { WindowManager } from './js/windowManager.js';
+      import { FileSystem } from './js/fileSystem.js';
+      import { Registry } from './js/registry.js';
+      import { SoundManager } from './js/soundManager.js';
+      import { Shortcuts } from './js/shortcuts.js';
+      import { Utils } from './js/utils.js';
+
+      import { ExplorerApp } from './js/apps/explorer.js';
+      import { NotepadApp } from './js/apps/notepad.js';
+      import { CalculatorApp } from './js/apps/calculator.js';
+      import { PaintApp } from './js/apps/paint.js';
+      import { TerminalApp } from './js/apps/terminal.js';
+      import { BrowserApp } from './js/apps/browser.js';
+      import { SettingsApp } from './js/apps/settings.js';
+      import { SolitaireApp } from './js/apps/solitaire.js';
+      import { StoreApp } from './js/apps/store.js';
+      import { WidgetsApp } from './js/apps/widgets.js';
+
+      const kernel = new Kernel();
+
+      kernel.registerSubsystem('bios', new Bios());
+      kernel.registerSubsystem('login', new Login());
+      kernel.registerSubsystem('desktop', new Desktop());
+      kernel.registerSubsystem('taskbar', new Taskbar());
+      kernel.registerSubsystem('windowManager', new WindowManager());
+      kernel.registerSubsystem('fileSystem', new FileSystem());
+      kernel.registerSubsystem('registry', new Registry());
+      kernel.registerSubsystem('soundManager', new SoundManager());
+      kernel.registerSubsystem('shortcuts', new Shortcuts());
+      kernel.registerSubsystem('utils', new Utils());
+
+      kernel.registerApp('explorer', new ExplorerApp());
+      kernel.registerApp('notepad', new NotepadApp());
+      kernel.registerApp('calculator', new CalculatorApp());
+      kernel.registerApp('paint', new PaintApp());
+      kernel.registerApp('terminal', new TerminalApp());
+      kernel.registerApp('browser', new BrowserApp());
+      kernel.registerApp('settings', new SettingsApp());
+      kernel.registerApp('solitaire', new SolitaireApp());
+      kernel.registerApp('store', new StoreApp());
+      kernel.registerApp('widgets', new WidgetsApp());
+
+      await kernel.initialize();
+
+      if ('serviceWorker' in navigator) {
+        await navigator.serviceWorker.register('./sw.js');
+      }
+    </script>
+  </body>
+</html>
