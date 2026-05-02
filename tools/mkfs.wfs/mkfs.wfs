@@ -1,0 +1,53 @@
+#!/usr/bin/env python3
+"""Format a WinnFS partition (skeleton implementation)."""
+
+from __future__ import annotations
+
+import argparse
+from pathlib import Path
+import sys
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        prog="mkfs.wfs",
+        description="Create or format a WinnFS (WFS) volume.",
+    )
+    parser.add_argument("device", type=Path, help="Device path or image file")
+    parser.add_argument("--label", default="WINNOS", help="Volume label")
+    parser.add_argument("--uuid", help="Explicit volume UUID")
+    parser.add_argument("--force", action="store_true", help="Allow formatting non-empty targets")
+    parser.add_argument("--dry-run", action="store_true", help="Validate options but do not write")
+    return parser.parse_args()
+
+
+def main() -> int:
+    args = parse_args()
+
+    print("mkfs.wfs skeleton")
+    print(f"  device:  {args.device}")
+    print(f"  label:   {args.label}")
+    print(f"  uuid:    {args.uuid or '<auto>'}")
+    print(f"  force:   {args.force}")
+    print(f"  dry-run: {args.dry_run}")
+    print("TODO: write superblock, root inode table, free-space bitmap, and journal header.")
+
+    if args.dry_run:
+        return 0
+
+    if not args.device.exists() and not args.force:
+        print(
+            "error: target does not exist. Create it first or pass --force for block devices.",
+            file=sys.stderr,
+        )
+        return 2
+
+    if args.device.exists() and args.device.is_file():
+        with args.device.open("r+b") as fp:
+            fp.seek(0)
+            fp.write(b"WFS0")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
